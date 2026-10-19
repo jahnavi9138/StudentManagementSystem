@@ -40,6 +40,9 @@ public class LoginServlet extends HttpServlet {
                                  "id INT AUTO_INCREMENT PRIMARY KEY, " +
                                  "username VARCHAR(50) NOT NULL UNIQUE, " +
                                  "password VARCHAR(255) NOT NULL)");
+                    
+                    // Insert default admin user if table is empty
+                    stmt.execute("INSERT IGNORE INTO users (id, username, password) VALUES (1, 'admin', 'admin123')");
                 }
 
                 String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
