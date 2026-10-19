@@ -19,9 +19,9 @@
     Object springObject = application.getAttribute("springContext");
 
     if (springObject == null) {
-        throw new javax.servlet.ServletException(
-            "Spring context was not found in application scope."
-        );
+        throw new jakarta.servlet.ServletException(
+    "Spring context was not found in application scope."
+);
     }
 
     AnnotationConfigApplicationContext context =
