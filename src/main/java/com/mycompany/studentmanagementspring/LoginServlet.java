@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -26,19 +27,21 @@ public class LoginServlet extends HttpServlet {
         String username = request.getParameter("username");
         String password = request.getParameter("password");
 
-        // Read password exclusively from Render environment variable
         String dbPassword = System.getenv("DB_PASSWORD");
-        
-        if (dbPassword == null || dbPassword.trim().isEmpty()) {
-            System.err.println("WARNING: DB_PASSWORD environment variable is missing!");
-        } else {
-            System.out.println("INFO: DB_PASSWORD successfully loaded from environment variable.");
-        }
 
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             
             try (Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, dbPassword)) {
+                
+                // Ensure users table exists
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("CREATE TABLE IF NOT EXISTS users (" +
+                                 "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                                 "username VARCHAR(50) NOT NULL UNIQUE, " +
+                                 "password VARCHAR(255) NOT NULL)");
+                }
+
                 String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
                 try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                     stmt.setString(1, username);
