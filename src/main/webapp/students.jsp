@@ -1,62 +1,55 @@
 
+
 <%@page import="java.util.List"%>
-<%@page import="org.springframework.context.annotation.AnnotationConfigApplicationContext"%>
+<%@page import="java.util.ArrayList"%>
 <%@page import="com.mycompany.studentmanagementspring.Student"%>
 <%@page import="com.mycompany.studentmanagementspring.StudentService"%>
+<%@page import="org.springframework.context.annotation.AnnotationConfigApplicationContext"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 
 <%
     String username = (String) session.getAttribute("username");
     String role = (String) session.getAttribute("role");
 
-    // Require login
     if (username == null || role == null) {
-        response.sendRedirect(
-            request.getContextPath() + "/login.jsp");
+        response.sendRedirect("login.jsp");
         return;
     }
 
-    Object springObject =
-        application.getAttribute("springContext");
+    Object springObject = application.getAttribute("springContext");
 
-    if (!(springObject instanceof
-            AnnotationConfigApplicationContext)) {
-        response.sendError(
-            500, "Spring context is not available.");
-        return;
+    if (springObject == null) {
+        throw new javax.servlet.ServletException(
+            "Spring context was not found in application scope."
+        );
     }
 
     AnnotationConfigApplicationContext context =
         (AnnotationConfigApplicationContext) springObject;
 
-    StudentService service =
-        context.getBean(StudentService.class);
+    StudentService service = context.getBean(StudentService.class);
 
-    List<Student> students;
+    List<Student> students = new ArrayList<>();
 
     if ("student".equalsIgnoreCase(role)) {
+        Object id = session.getAttribute("roll_no");
 
-        Object id = session.getAttribute("student_id");
+        if (id != null) {
+            int studentId = Integer.parseInt(id.toString());
+            Student student = service.getStudentByRollNo(studentId);
 
-        if (id == null) {
-            response.sendError(
-                403, "Student ID is not linked to your account.");
-            return;
+            if (student != null) {
+                students.add(student);
+            }
         }
-
-        int studentId = Integer.parseInt(id.toString());
-
-        // A student receives only their own record
-        students = service.getStudentByRollNo(studentId);
-
     } else if ("staff".equalsIgnoreCase(role)
             || "admin".equalsIgnoreCase(role)) {
-
-        // Staff and admin can view all records
         students = service.getAllStudents();
-
     } else {
-        response.sendError(403, "Access denied.");
+        response.sendError(
+            HttpServletResponse.SC_FORBIDDEN,
+            "You do not have permission to view students."
+        );
         return;
     }
 %>
@@ -66,52 +59,94 @@
 <head>
     <meta charset="UTF-8">
     <title>Student Details</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #f4f6f9;
+        }
+
+        h2 {
+            color: #23395d;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #23395d;
+            color: white;
+        }
+
+        .message {
+            padding: 12px;
+            background: white;
+            border: 1px solid #ddd;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            color: #174ea6;
+        }
+    </style>
 </head>
 <body>
 
-    <h2>Student Details</h2>
-    <p>Welcome, <%= username %>!</p>
+<h2>Student Management System</h2>
+<p>Welcome, <%= username %>!</p>
+<p>Role: <%= role %></p>
 
-    <% if (students.isEmpty()) { %>
+<h3>Student Details</h3>
 
-        <p>No student record found for your account.</p>
+<% if (students.isEmpty()) { %>
+    <p class="message">No student records found.</p>
+<% } else { %>
 
-    <% } else { %>
-
-        <table border="1" cellpadding="8" cellspacing="0">
-            <tr>
-                <th>Roll No</th>
-                <th>Name</th>
-                <th>Gender</th>
-                <th>DOB</th>
-                <th>Course</th>
-                <th>Semester</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Address</th>
-            </tr>
-
-            <% for (Student s : students) { %>
-                <tr>
-                    <td><%= s.getRollNo() %></td>
-                    <td><%= s.getName() %></td>
-                    <td><%= s.getGender() %></td>
-                    <td><%= s.getDob() %></td>
-                    <td><%= s.getCourse() %></td>
-                    <td><%= s.getSemester() %></td>
-                    <td><%= s.getEmail() %></td>
-                    <td><%= s.getPhone() %></td>
-                    <td><%= s.getAddress() %></td>
-                </tr>
-            <% } %>
-        </table>
-
+<table>
+    <thead>
+        <tr>
+            <th>Roll No</th>
+            <th>Name</th>
+            <th>Gender</th>
+            <th>Date of Birth</th>
+            <th>Course</th>
+            <th>Semester</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Address</th>
+        </tr>
+    </thead>
+    <tbody>
+    <% for (Student student : students) { %>
+        <tr>
+            <td><%= student.getRollNo() %></td>
+            <td><%= student.getName() %></td>
+            <td><%= student.getGender() %></td>
+            <td><%= student.getDob() %></td>
+            <td><%= student.getCourse() %></td>
+            <td><%= student.getSemester() %></td>
+            <td><%= student.getEmail() %></td>
+            <td><%= student.getPhone() %></td>
+            <td><%= student.getAddress() %></td>
+        </tr>
     <% } %>
+    </tbody>
+</table>
 
-    <br>
-    <a href="dashboard.jsp">Back to Dashboard</a>
-    <br><br>
-    <a href="LogoutServlet">Logout</a>
+<% } %>
+
+<a href="dashboard.jsp">Back to Dashboard</a>
 
 </body>
 </html>
+
